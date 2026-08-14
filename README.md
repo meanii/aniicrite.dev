@@ -115,6 +115,19 @@ SOCIAL_LINKS="GitHub|https://github.com/you,Mastodon|https://your.instance/@you,
 Run the Go binary on `127.0.0.1:8080` behind Caddy, or use the provided
 Dockerfile / `compose.yaml`.
 
+### Auto-deploy (GitHub Actions)
+
+On every push to `main`, after tests pass, the `deploy` job SSHes to the
+server and runs `deploy/remote-deploy.sh` (`git pull` + `docker compose up -d
+--build`). Configure repo secrets: `SSH_HOST`, `SSH_PORT`, `SSH_USER`,
+`SSH_KEY` (a dedicated deploy private key). On the server, keep the
+`compose.yaml` (with `build: ./repo`) and `.env` in an app dir alongside a
+`repo/` checkout.
+
+> **Docker Compose gotcha:** Compose interpolates `$` in env files, which
+> corrupts the argon2 hash. Double every `$` (`$` → `$$`) in
+> `ADMIN_PASSWORD_HASH` inside `.env`.
+
 ## Development
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Generated `*_templ.go` files are
