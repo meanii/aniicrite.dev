@@ -10,7 +10,7 @@ I run a few AI agents on my homelab. Not a chatbot in a browser tab — actual a
 
 ## omp: the runtime
 
-[omp](https://github.com/) (oh-my-pi) is the agent runtime. It's the thing that turns "an LLM plus some API keys" into an agent that can use tools, run shell commands, spawn sub-agents, and follow skills.
+**omp** (oh-my-pi) is the agent runtime. It's the thing that turns "an LLM plus some API keys" into an agent that can use tools, run shell commands, spawn sub-agents, and follow skills.
 
 I run one agent per **profile**. On my homelab those are separate LXC containers — one per person the agent works for — each with its own memory, its own credentials, and its own personality file. A profile isn't just a system prompt; it's a whole workspace: cron jobs, hooks, a kanban board, cached media, and a `SOUL.md` that sets its voice.
 
