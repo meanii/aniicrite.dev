@@ -1,36 +1,24 @@
 ---
-title: Ensuring Seamless Workflows with Persistent tmux Environments
+title: Persisting tmux sessions across reboots
 slug: persistent-tmux-environments
 date: 2024-01-26T00:00:00Z
 tags: tmux, Linux, DevOps
 status: published
-summary: Learn how to persist your tmux environments to enhance your terminal workflow efficiency.
+summary: Restore your tmux windows and panes after a restart with tmux-resurrect.
 ---
-Ever wished you could pick up right where you left off in your terminal sessions after a system restart? Well, the good news is you can! 🚀
+tmux keeps my terminal sessions organized, but a reboot used to wipe all of it — every window and pane gone. `tmux-resurrect` fixes that: it saves the session to disk and restores it after a restart, layout and all.
 
-Introducing the power of persisting tmux environments! 🌐 `tmux`, a terminal multiplexer, allows you to create, manage, and persist multiple terminal sessions within a single window. Now, with the magic of persistence, you can ensure that your tmux sessions survive system restarts, making it a game-changer for developers, sysadmins, and anyone who lives in the terminal.
+I made a short video walking through the setup:
 
-### 🔄 Key Benefits:
+[![tmux persistence tutorial](https://img.youtube.com/vi/4pMxsNanc_g/0.jpg)](https://youtube.com/shorts/4pMxsNanc_g)
 
-1. **Seamless Continuity:** No need to worry about losing your work in progress. Persistent tmux environments let you resume your terminal sessions effortlessly.
-2. **Resource Optimization:** Save valuable system resources by maintaining a single tmux session with multiple windows, rather than opening numerous terminal instances.
-3. **Efficient Collaboration:** Share your tmux environment configuration with teammates, fostering consistent development environments and collaboration.
+The gist:
 
-### 🛠️ How to Achieve tmux Persistence:
+- Install the plugin and add it to your `tmux.conf`.
+- Save a session with the resurrect keybind (`prefix + Ctrl-s`).
+- Restore it after a reboot (`prefix + Ctrl-r`), or set it to restore automatically.
 
-Check out the attached short video tutorial to learn how to set up and persist your tmux sessions across system restarts. It's a quick and easy process that can significantly enhance your workflow efficiency.
+Links:
 
-[![tmux Persistence Tutorial](https://img.youtube.com/vi/4pMxsNanc_g/0.jpg)](https://youtube.com/shorts/4pMxsNanc_g)
-
-### 🎬 Video Tutorial Highlights:
-
-- **Configuration Setup:** Explore the steps to configure tmux for persistence.
-- **Saving Sessions:** Learn how to save your tmux sessions so they can be restored later.
-- **Automated Restoration:** Discover methods to automate the restoration process upon system restart.
-
-### 🚀 Level up your terminal game and never lose your flow again! 💻
-
-Embrace tmux persistence and let your terminal sessions become as resilient as your workflow. For more details, check out the plugin and configuration file below:
-
-- **Plugin:** [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)
-- **Configuration File:** [~/.tmux.conf](https://github.com/meanii/dotfiles/blob/main/dot_config/tmux/tmux.conf)
+- Plugin: [tmux-resurrect](https://github.com/tmux-plugins/tmux-resurrect)
+- My config: [tmux.conf](https://github.com/meanii/dotfiles/blob/main/dot_config/tmux/tmux.conf)

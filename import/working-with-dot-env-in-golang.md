@@ -1,24 +1,20 @@
 ---
-title: Simplify Configuration Management in Golang with Viper
+title: Loading .env files in Go with Viper
 slug: working-with-dot-env-in-golang
 date: 2024-03-31T00:00:00Z
 tags: Go, Viper, Config
 status: published
-summary: Learn how to efficiently load .env variables in Golang using the Viper package.
+summary: How I load .env variables into a typed struct in Go using Viper.
 ---
-Managing configuration in a Golang project can often be a challenging task, especially when dealing with multiple environment variables. The `viper` package offers a simple and effective solution for loading and managing these variables. In this post, we'll walk through how to use `viper` to load `.env` variables in your Golang application.
+I use [Viper](https://github.com/spf13/viper) to read a `.env` file into a typed struct so the rest of the app never touches `os.Getenv` directly. Here's the setup I copy into most projects.
 
-### Setting Up Viper
-
-First, you need to install the `viper` package. You can do this using `go get`:
+Install it:
 
 ```bash
 go get github.com/spf13/viper
 ```
 
-### Loading Configuration
-
-Let's create a configuration file to load environment variables. Here's an example of how you can structure your code:
+Define a struct for the variables you expect and load them in one place:
 
 ```go
 package configs
@@ -37,7 +33,7 @@ type Env struct {
     RefreshToken  string `mapstructure:"REFRESH_TOKEN"`
 }
 
-// LoadConfig reads and loads the environment variables from a .env file
+// LoadConfig reads the .env file and unmarshals it into Env
 func LoadConfig() *Env {
     var envs Env
 
@@ -57,14 +53,7 @@ func LoadConfig() *Env {
 }
 ```
 
-In this code:
-
-- We define an `Env` struct to map our environment variables.
-- The `LoadConfig` function reads the `.env` file, loads the environment variables using `viper`, and unmarshals them into the `Env` struct.
-
-### Using the Configuration
-
-You can now use the `LoadConfig` function to load your environment variables at the start of your application:
+Then load it once at startup and pass the struct around:
 
 ```go
 package main
@@ -84,8 +73,4 @@ func main() {
 }
 ```
 
-### Conclusion
-
-Using `viper` to manage environment variables in Golang is an efficient way to handle configuration. It simplifies the process of loading variables and ensures your application is easy to configure and maintain. Give it a try in your next Golang project and enjoy a more streamlined configuration management process!
-
-**Happy coding!**
+That's the whole thing. The nice part is the `mapstructure` tags — the config is typed, so a missing or misspelled key shows up at load time instead of somewhere deep in a request.

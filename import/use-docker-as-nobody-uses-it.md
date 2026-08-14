@@ -1,44 +1,39 @@
 ---
-title: Use Docker Like Nobody Else 💫
+title: Using Docker as a throwaway dev environment
 slug: use-docker-as-nobody-uses-it
 date: 2022-04-11T00:00:00Z
 tags: Docker, DevOps
 status: published
-summary: Learn to use Docker to simplify and isolate your development environment.
+summary: Skip installing nvm and databases locally — run your dev stack straight from Docker images.
 ---
-Setting up a development environment can be a daunting task. Imagine you need to work with the MERN Stack. Here's what you typically need to do:
+Setting up a MERN stack locally usually means installing nvm, picking a Node version, installing MongoDB, and then juggling versions when a package won't build. It piles up fast and the versions start fighting each other.
 
-1. Install nvm or any Node.js version.
-2. Install the MongoDB server.
-3. If a package doesn't support your current Node.js version, you have to install a new one.
-4. Keeping all these running on your local machine can be cumbersome and may cause conflicts.
+I stopped doing that. Instead I run the whole thing out of Docker images and keep my machine clean.
 
-So, how can we make this process easier to manage and isolate? The answer is Docker. Let's dive in!
+### Install Docker
 
-### Installing Docker
-
-Here's a simple script to install Docker on any Linux distro:
+Works on most Linux distros:
 
 ```bash
 curl -o- https://get.docker.com | sh -x
 ```
 
-### Running a Node.js Application with Docker
+### Run a Node app
 
-First, navigate to your working directory and run the following command:
+From your project directory:
 
 ```bash
 sudo docker run -it -v $(pwd):/srv -w /srv -p 3000:3000 node:current npm run start:dev
 ```
 
-- `-it` : interactive terminal
-- `-v`: volume mount
-- `-w`: working directory
-- `-p`: port forwarding
+- `-it` — interactive terminal
+- `-v` — mount the current dir into the container
+- `-w` — set the working directory
+- `-p` — forward the port
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*jC1ETEU62n9wVQhVcEAyvw.png)
 
-This command runs a Vite React.js project:
+Same idea for a Vite React project:
 
 ```bash
 sudo docker run -it -v $(pwd):/srv -w /srv -p 5173:5173 node:current npm run dev
@@ -46,12 +41,12 @@ sudo docker run -it -v $(pwd):/srv -w /srv -p 5173:5173 node:current npm run dev
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*nRjpvDFAaD5yuGDW0rAr1g.png)
 
-### Running MongoDB with Docker
+### Run MongoDB
 
 ```bash
 sudo docker run -d -p 27017:27017 --name my-demo-mongo mongo
 ```
 
-By using Docker, you can easily manage and isolate your development environment, avoiding conflicts and making the setup process much smoother.
+No Node versions on my host, no local Mongo, nothing to uninstall later. When I'm done with a project I delete the containers and that's it.
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*16QMx1_smA-yr9DRyRgzVg.png)

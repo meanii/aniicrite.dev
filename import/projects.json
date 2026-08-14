@@ -1,7 +1,7 @@
 [
   {
     "title": "tcp.chat",
-    "description": "A raw TCP chat application that facilitates easy communication with others and allows users to join public chats.",
+    "description": "A chat app that runs over raw TCP — connect with a socket, join a public room, and talk. No web stack, just the protocol.",
     "url": "https://github.com/meanii/tcp.chat",
     "repo_url": "https://github.com/meanii/tcp.chat",
     "tags": ["2024", "Go"],
@@ -9,7 +9,7 @@
   },
   {
     "title": "aws-lambda-hls-enc",
-    "description": "Written in Go: fast, efficient HLS file encryption within AWS Lambda. Encrypts HLS files directly from a Lambda function, adding flexibility and scalability to media streaming workflows on AWS.",
+    "description": "Encrypts HLS video segments from inside an AWS Lambda function, so streaming pipelines can encrypt on the fly without a dedicated server. Written in Go.",
     "url": "https://github.com/meanii/aws-lambda-hls-enc",
     "repo_url": "https://github.com/meanii/aws-lambda-hls-enc",
     "tags": ["2024", "Go", "AWS"],
@@ -17,7 +17,7 @@
   },
   {
     "title": "imgax",
-    "description": "A Golang-based AI image API service — straightforward and fast. Performs a range of AI-powered image tasks including background removal and background replacement.",
+    "description": "An image API in Go for common AI image tasks — background removal, background replacement, and similar edits behind a simple HTTP endpoint.",
     "url": "https://github.com/meanii/imgax",
     "repo_url": "https://github.com/meanii/imgax",
     "tags": ["2024", "Go", "AI"],
@@ -25,7 +25,7 @@
   },
   {
     "title": "streaming-server",
-    "description": "RTMP server for multimedia / video streaming using Nginx and the nginx-rtmp-module.",
+    "description": "An RTMP server for video streaming, built on Nginx and the nginx-rtmp-module.",
     "url": "https://github.com/meanii/streaming-server",
     "repo_url": "https://github.com/meanii/streaming-server",
     "tags": ["2023", "Nginx", "Streaming"],
@@ -33,7 +33,7 @@
   },
   {
     "title": "downly",
-    "description": "A simple Telegram bot that downloads files from the internet and uploads them to Telegram.",
+    "description": "A Telegram bot that grabs files from a URL and re-uploads them into Telegram.",
     "url": "https://github.com/meanii/downly",
     "repo_url": "https://github.com/meanii/downly",
     "tags": ["2023", "Telegram"],
@@ -41,7 +41,7 @@
   },
   {
     "title": "sync.ssh",
-    "description": "A CLI that helps you keep important files/directories synced in GitHub.",
+    "description": "A CLI that keeps chosen files and directories synced through a GitHub repo, so I can pull my setup onto a new machine.",
     "url": "https://github.com/meanii/sync.ssh",
     "repo_url": "https://github.com/meanii/sync.ssh",
     "tags": ["2022", "CLI"],
@@ -49,7 +49,7 @@
   },
   {
     "title": "touka.ssh",
-    "description": "An SSH manager that lets you manage all of your VPSs without keeping your password.",
+    "description": "An SSH connection manager for juggling multiple VPSes without retyping hosts and passwords each time.",
     "url": "https://github.com/meanii/touka.ssh",
     "repo_url": "https://github.com/meanii/touka.ssh",
     "tags": ["2022", "CLI", "SSH"],
@@ -57,7 +57,7 @@
   },
   {
     "title": "Stella",
-    "description": "The first Telegram group-management bot built in Pyrogram.",
+    "description": "A Telegram group-management bot written in Pyrogram. One of my early bigger Python projects.",
     "url": "https://github.com/SpookyGang/Stella",
     "repo_url": "https://github.com/SpookyGang/Stella",
     "tags": ["2021", "Python", "Telegram"],
@@ -65,7 +65,7 @@
   },
   {
     "title": "session maker",
-    "description": "A bot that creates session strings for Pyrogram and Telethon.",
+    "description": "A bot that generates Pyrogram and Telethon session strings, so you don't have to script the login flow by hand.",
     "url": "https://github.com/meanii/sessionMaker",
     "repo_url": "https://github.com/meanii/sessionMaker",
     "tags": ["2021", "Python", "Telegram"],
@@ -73,7 +73,7 @@
   },
   {
     "title": "spotify_userbot",
-    "description": "A userbot that updates a Telegram user's biography according to their current Spotify playback.",
+    "description": "A Telegram userbot that rewrites your bio to whatever you're currently playing on Spotify.",
     "url": "https://github.com/meanii/spotify_userbot",
     "repo_url": "https://github.com/meanii/spotify_userbot",
     "tags": ["2020", "Python"],
@@ -81,7 +81,7 @@
   },
   {
     "title": "Search4",
-    "description": "An OSINT tool that helps you find people on the internet. Small and fast.",
+    "description": "A small, quick OSINT tool for finding people's accounts across the web.",
     "url": "https://github.com/meanii/Search4",
     "repo_url": "https://github.com/meanii/Search4",
     "tags": ["2019", "OSINT"],
