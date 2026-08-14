@@ -1,0 +1,29 @@
+# systemd unit for the aniicrite.dev site.
+# Install: sudo cp deploy/aniicrite.service /etc/systemd/system/
+#          sudo systemctl daemon-reload && sudo systemctl enable --now aniicrite
+[Unit]
+Description=aniicrite.dev (Go SSR + SQLite)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=anil
+WorkingDirectory=/opt/aniicrite
+EnvironmentFile=/opt/aniicrite/.env
+ExecStart=/opt/aniicrite/aniicrite
+Restart=on-failure
+RestartSec=3
+
+# Hardening — the process only needs to write its data dir.
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/aniicrite/data
+ProtectKernelTunables=true
+ProtectControlGroups=true
+RestrictSUIDSGID=true
+
+[Install]
+WantedBy=multi-user.target

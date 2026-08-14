@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.26"
+
+      - name: Install templ
+        run: go install github.com/a-h/templ/cmd/templ@v0.3.1020
+
+      - name: Verify generated templ is up to date
+        run: |
+          templ generate
+          git diff --exit-code -- '*_templ.go' \
+            || (echo "::error::Stale generated templ files. Run 'templ generate' and commit." && exit 1)
+
+      - name: gofmt
+        run: |
+          unformatted="$(gofmt -l .)"
+          if [ -n "$unformatted" ]; then
+            echo "::error::These files are not gofmt-ed:"; echo "$unformatted"; exit 1
+          fi
+
+      - name: go vet
+        run: go vet ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: go build
+        run: CGO_ENABLED=0 go build ./...

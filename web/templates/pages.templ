@@ -1,0 +1,233 @@
+package templates
+
+import (
+	"fmt"
+	"aniicrite.dev/internal/models"
+)
+
+templ Home(b Base, recent []models.Post) {
+	@Layout(b) {
+		<section class="intro">
+			if b.Site.AvatarURL != "" {
+				<img src={ b.Site.AvatarURL } alt={ b.Site.Author } width="84" height="84"/>
+			}
+			<div>
+				<h1>{ b.Site.Author }</h1>
+				<p>{ b.Site.Bio }</p>
+			</div>
+		</section>
+		<p class="section-label">Recent posts</p>
+		@postListItems(recent)
+		<p style="margin-top:1.5rem"><a href="/posts/">All posts →</a></p>
+	}
+}
+
+templ PostsPage(b Base, posts []models.Post, page, totalPages int) {
+	@Layout(b) {
+		<h1>Posts</h1>
+		@searchWidget()
+		@postListItems(posts)
+		if totalPages > 1 {
+			<div class="pagination">
+				if page > 1 {
+					<a href={ templ.SafeURL(fmt.Sprintf("/posts/?page=%d", page-1)) }>← Newer</a>
+				} else {
+					<span></span>
+				}
+				<span class="muted">Page { fmt.Sprint(page) } / { fmt.Sprint(totalPages) }</span>
+				if page < totalPages {
+					<a href={ templ.SafeURL(fmt.Sprintf("/posts/?page=%d", page+1)) }>Older →</a>
+				} else {
+					<span></span>
+				}
+			</div>
+		}
+	}
+}
+
+templ postListItems(posts []models.Post) {
+	if len(posts) == 0 {
+		<p class="muted">Nothing here yet.</p>
+	} else {
+		<ul class="post-list">
+			for _, p := range posts {
+				<li>
+					<a href={ templ.SafeURL("/posts/" + p.Slug + "/") }>{ p.Title }</a>
+					<div class="meta">
+						<time datetime={ rfc3339(p.Date()) }>{ fmtDate(p.Date()) }</time>
+						· { fmt.Sprint(p.ReadingMinutes) } min read
+					</div>
+					if p.Summary != "" {
+						<p class="summary">{ p.Summary }</p>
+					}
+				</li>
+			}
+		</ul>
+	}
+}
+
+templ PostPage(b Base, p models.Post, comments []models.Comment, loginURL string) {
+	@Layout(b) {
+		<article class="post">
+			<h1>{ p.Title }</h1>
+			<div class="meta">
+				<time datetime={ rfc3339(p.Date()) }>{ fmtDate(p.Date()) }</time>
+				· { fmt.Sprint(p.ReadingMinutes) } min read
+				· { fmt.Sprint(p.ViewCount) } views
+			</div>
+			if len(p.Tags) > 0 {
+				@tagLinks(p.Tags)
+			}
+			if p.CoverImage != "" {
+				<img class="cover" src={ p.CoverImage } alt={ p.Title }/>
+			}
+			@templ.Raw(p.BodyHTML)
+		</article>
+		if b.Site.CommentsEnabled {
+			@commentsSection(b, p, comments, loginURL)
+		}
+	}
+}
+
+templ commentsSection(b Base, p models.Post, comments []models.Comment, loginURL string) {
+	<section class="comments">
+		<h2>{ fmt.Sprint(len(comments)) } comments</h2>
+		<div id="comments-list">
+			for _, c := range comments {
+				@CommentItem(c)
+			}
+		</div>
+		if b.User != nil {
+			<form
+				class="comment-form"
+				hx-post={ "/posts/" + p.Slug + "/comments" }
+				hx-target="#comments-list"
+				hx-swap="beforeend"
+				hx-on::after-request="if(event.detail.successful) this.reset()"
+			>
+				<label for="body">Comment as { b.User.Login }</label>
+				<textarea id="body" name="body" rows="3" required maxlength="4000" placeholder="Be kind."></textarea>
+				<div style="margin-top:0.5rem">
+					<button class="btn" type="submit">Post comment</button>
+				</div>
+			</form>
+		} else {
+			<p class="muted">
+				<a class="btn secondary" href={ templ.SafeURL(loginURL) }>Sign in with GitHub to comment</a>
+			</p>
+		}
+	</section>
+}
+
+templ CommentItem(c models.Comment) {
+	<div class="comment">
+		if c.GHAvatar != "" {
+			<img src={ c.GHAvatar } alt={ c.GHLogin } width="36" height="36"/>
+		}
+		<div>
+			<div class="who">
+				<a href={ templ.SafeURL("https://github.com/" + c.GHLogin) } rel="noopener" target="_blank">{ c.GHLogin }</a>
+				<span class="meta">· { fmtDate(c.CreatedAt) }</span>
+			</div>
+			<p class="body">{ c.Body }</p>
+		</div>
+	</div>
+}
+
+templ ProjectsPage(b Base, projects []models.Project) {
+	@Layout(b) {
+		<h1>Projects</h1>
+		if len(projects) == 0 {
+			<p class="muted">Nothing here yet.</p>
+		}
+		for _, pr := range projects {
+			<div style="padding:1.25rem 0;border-bottom:1px solid var(--border)">
+				<h3 style="margin:0 0 0.25rem">
+					if pr.URL != "" {
+						<a href={ templ.SafeURL(pr.URL) } rel="noopener" target="_blank">{ pr.Title } ↗</a>
+					} else {
+						{ pr.Title }
+					}
+				</h3>
+				@templ.Raw(pr.DescHTML)
+				<div class="tags">
+					for _, t := range pr.Tags {
+						<span class="tag">{ t.Name }</span>
+					}
+					if pr.RepoURL != "" {
+						<a class="tag" href={ templ.SafeURL(pr.RepoURL) } rel="noopener" target="_blank">source</a>
+					}
+				</div>
+			</div>
+		}
+	}
+}
+
+templ AboutPage(b Base, bodyHTML string) {
+	@Layout(b) {
+		<article class="post">
+			@templ.Raw(bodyHTML)
+		</article>
+	}
+}
+
+templ searchWidget() {
+	<input
+		class="search-box"
+		type="search"
+		name="q"
+		placeholder="Search posts…"
+		hx-get="/search"
+		hx-trigger="input changed delay:250ms, search"
+		hx-target="#search-results"
+		hx-indicator="#search-ind"
+		autocomplete="off"
+	/>
+	<span id="search-ind" class="htmx-indicator meta">searching…</span>
+	<div id="search-results" class="search-results"></div>
+}
+
+templ SearchResults(results []models.SearchResult, query string) {
+	if query == "" {
+		<!-- empty -->
+	} else if len(results) == 0 {
+		<p class="muted">No matches for “{ query }”.</p>
+	} else {
+		<ul class="post-list">
+			for _, r := range results {
+				<li>
+					<a href={ templ.SafeURL("/posts/" + r.Slug + "/") }>{ r.Title }</a>
+					<p class="summary">@templ.Raw(r.Snippet)</p>
+				</li>
+			}
+		</ul>
+	}
+}
+
+templ tagLinks(tags []models.Tag) {
+	<div class="tags">
+		for _, t := range tags {
+			<a class="tag" href={ templ.SafeURL("/tags/" + t.Slug + "/") }>{ t.Name }</a>
+		}
+	</div>
+}
+
+templ TagPage(b Base, tag models.Tag, posts []models.Post) {
+	@Layout(b) {
+		<p class="section-label">Tag</p>
+		<h1>#{ tag.Name }</h1>
+		@postListItems(posts)
+		<p style="margin-top:1.5rem"><a href="/tags/">All tags →</a></p>
+	}
+}
+
+templ TagsIndex(b Base, tags []models.Tag) {
+	@Layout(b) {
+		<h1>Tags</h1>
+		if len(tags) == 0 {
+			<p class="muted">No tags yet.</p>
+		} else {
+			@tagLinks(tags)
+		}
+	}
+}

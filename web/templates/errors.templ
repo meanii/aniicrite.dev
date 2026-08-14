@@ -1,0 +1,15 @@
+package templates
+
+templ NotFound(b Base) {
+	@Layout(b) {
+		<h1>404</h1>
+		<p class="muted">That page doesn't exist. <a href="/">Go home →</a></p>
+	}
+}
+
+templ ServerError(b Base) {
+	@Layout(b) {
+		<h1>500</h1>
+		<p class="muted">Something broke on my end. Try again in a moment.</p>
+	}
+}

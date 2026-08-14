@@ -1,0 +1,249 @@
+package templates
+
+import (
+	"fmt"
+	"aniicrite.dev/internal/models"
+)
+
+templ AdminLogin(b Base, errMsg string) {
+	@Layout(b) {
+		<h1>Admin</h1>
+		if errMsg != "" {
+			<div class="flash error">{ errMsg }</div>
+		}
+		<form method="post" action="/admin/login" style="max-width:22rem">
+			<label for="password">Password</label>
+			<input type="password" id="password" name="password" required autofocus/>
+			<div style="margin-top:1rem">
+				<button class="btn" type="submit">Sign in</button>
+			</div>
+		</form>
+	}
+}
+
+templ AdminDashboard(b Base, s Stats) {
+	@Layout(b) {
+		<h1>Dashboard</h1>
+		<ul class="post-list">
+			<li>{ fmt.Sprint(s.Posts) } published posts · { fmt.Sprint(s.Drafts) } drafts</li>
+			<li>{ fmt.Sprint(s.Projects) } projects</li>
+			<li>{ fmt.Sprint(s.Comments) } comments</li>
+		</ul>
+		<p style="margin-top:1.5rem">
+			<a class="btn" href="/admin/posts/new">New post</a>
+			<a class="btn secondary" href="/admin/projects/new">New project</a>
+		</p>
+	}
+}
+
+templ AdminPosts(b Base, posts []models.Post) {
+	@Layout(b) {
+		<div style="display:flex;align-items:center;gap:1rem">
+			<h1>Posts</h1>
+			<a class="btn" href="/admin/posts/new" style="margin-left:auto">New post</a>
+		</div>
+		<table class="admin-table">
+			<thead><tr><th>Title</th><th>Status</th><th>Date</th><th>Views</th><th></th></tr></thead>
+			<tbody>
+				for _, p := range posts {
+					<tr>
+						<td><a href={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/edit", p.ID)) }>{ p.Title }</a></td>
+						<td>
+							if p.Published() {
+								<span class="badge published">published</span>
+							} else {
+								<span class="badge">draft</span>
+							}
+						</td>
+						<td class="meta">{ fmtDate(p.Date()) }</td>
+						<td class="meta">{ fmt.Sprint(p.ViewCount) }</td>
+						<td class="actions">
+							<a class="btn secondary" href={ templ.SafeURL("/posts/" + p.Slug + "/") } target="_blank" style="padding:0.2rem 0.5rem">view</a>
+							<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/posts/%d/delete", p.ID)) } onsubmit="return confirm('Delete this post?')">
+								<button class="btn secondary" type="submit" style="padding:0.2rem 0.5rem">delete</button>
+							</form>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+templ AdminPostForm(b Base, p models.Post, isNew bool, errMsg string) {
+	@Layout(b) {
+		if isNew {
+			<h1>New post</h1>
+		} else {
+			<h1>Edit post</h1>
+		}
+		if errMsg != "" {
+			<div class="flash error">{ errMsg }</div>
+		}
+		<form method="post" action={ templ.SafeURL(postFormAction(p, isNew)) }>
+			<label for="title">Title</label>
+			<input type="text" id="title" name="title" value={ p.Title } required/>
+			<div class="form-row">
+				<div>
+					<label for="slug">Slug (blank = from title)</label>
+					<input type="text" id="slug" name="slug" value={ p.Slug }/>
+				</div>
+				<div>
+					<label for="cover_image">Cover image URL</label>
+					<input type="text" id="cover_image" name="cover_image" value={ p.CoverImage }/>
+				</div>
+			</div>
+			<label for="summary">Summary (blank = auto-excerpt)</label>
+			<input type="text" id="summary" name="summary" value={ p.Summary }/>
+			<label for="tags">Tags (comma-separated)</label>
+			<input type="text" id="tags" name="tags" value={ tagList(p.Tags) }/>
+			<label>Body (Markdown)</label>
+			<div class="editor-grid">
+				<textarea
+					id="body_md" name="body_md" rows="24"
+					hx-post="/admin/preview"
+					hx-trigger="input changed delay:400ms"
+					hx-target="#preview"
+				>{ p.BodyMD }</textarea>
+				<div id="preview" class="preview post">@templ.Raw(p.BodyHTML)</div>
+			</div>
+			@uploadWidget()
+			<label for="status">Status</label>
+			<select id="status" name="status">
+				<option value="draft" selected?={ !p.Published() }>Draft</option>
+				<option value="published" selected?={ p.Published() }>Published</option>
+			</select>
+			<div style="margin-top:1.5rem">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn secondary" href="/admin/posts">Cancel</a>
+			</div>
+		</form>
+	}
+}
+
+templ uploadWidget() {
+	<label>Upload image (inserts Markdown URL)</label>
+	<input
+		type="file" name="image" accept="image/*"
+		hx-post="/admin/upload"
+		hx-trigger="change"
+		hx-encoding="multipart/form-data"
+		hx-target="#upload-result"
+		hx-swap="innerHTML"
+	/>
+	<div id="upload-result" class="meta"></div>
+}
+
+templ UploadResult(url string) {
+	<span>Uploaded: <code>![]({ url })</code> — copy into the body.</span>
+}
+
+templ AdminProjects(b Base, projects []models.Project) {
+	@Layout(b) {
+		<div style="display:flex;align-items:center;gap:1rem">
+			<h1>Projects</h1>
+			<a class="btn" href="/admin/projects/new" style="margin-left:auto">New project</a>
+		</div>
+		<table class="admin-table">
+			<thead><tr><th>Title</th><th>Status</th><th>Order</th><th></th></tr></thead>
+			<tbody>
+				for _, pr := range projects {
+					<tr>
+						<td><a href={ templ.SafeURL(fmt.Sprintf("/admin/projects/%d/edit", pr.ID)) }>{ pr.Title }</a></td>
+						<td>
+							if pr.Status == models.StatusPublished {
+								<span class="badge published">published</span>
+							} else {
+								<span class="badge">draft</span>
+							}
+						</td>
+						<td class="meta">{ fmt.Sprint(pr.SortOrder) }</td>
+						<td class="actions">
+							<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/projects/%d/delete", pr.ID)) } onsubmit="return confirm('Delete this project?')">
+								<button class="btn secondary" type="submit" style="padding:0.2rem 0.5rem">delete</button>
+							</form>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}
+
+templ AdminProjectForm(b Base, pr models.Project, isNew bool, errMsg string) {
+	@Layout(b) {
+		if isNew {
+			<h1>New project</h1>
+		} else {
+			<h1>Edit project</h1>
+		}
+		if errMsg != "" {
+			<div class="flash error">{ errMsg }</div>
+		}
+		<form method="post" action={ templ.SafeURL(projectFormAction(pr, isNew)) }>
+			<label for="title">Title</label>
+			<input type="text" id="title" name="title" value={ pr.Title } required/>
+			<div class="form-row">
+				<div>
+					<label for="url">Live URL</label>
+					<input type="url" id="url" name="url" value={ pr.URL }/>
+				</div>
+				<div>
+					<label for="repo_url">Repo URL</label>
+					<input type="url" id="repo_url" name="repo_url" value={ pr.RepoURL }/>
+				</div>
+			</div>
+			<div class="form-row">
+				<div>
+					<label for="tags">Tags (comma-separated)</label>
+					<input type="text" id="tags" name="tags" value={ tagList(pr.Tags) }/>
+				</div>
+				<div>
+					<label for="sort_order">Sort order</label>
+					<input type="number" id="sort_order" name="sort_order" value={ fmt.Sprint(pr.SortOrder) }/>
+				</div>
+			</div>
+			<label for="desc_md">Description (Markdown)</label>
+			<textarea id="desc_md" name="desc_md" rows="8">{ pr.DescMD }</textarea>
+			<label for="status">Status</label>
+			<select id="status" name="status">
+				<option value="published" selected?={ pr.Status != models.StatusDraft }>Published</option>
+				<option value="draft" selected?={ pr.Status == models.StatusDraft }>Draft</option>
+			</select>
+			<div style="margin-top:1.5rem">
+				<button class="btn" type="submit">Save</button>
+				<a class="btn secondary" href="/admin/projects">Cancel</a>
+			</div>
+		</form>
+	}
+}
+
+templ AdminComments(b Base, comments []AdminComment) {
+	@Layout(b) {
+		<h1>Comments</h1>
+		if len(comments) == 0 {
+			<p class="muted">No comments yet.</p>
+		}
+		<table class="admin-table">
+			<tbody>
+				for _, c := range comments {
+					<tr>
+						<td>
+							<div class="who">{ c.GHLogin } <span class="meta">on <a href={ templ.SafeURL("/posts/" + c.PostSlug + "/") }>{ c.PostTitle }</a></span></div>
+							<div>{ c.Body }</div>
+							<div class="meta">{ fmtDate(c.CreatedAt) }</div>
+						</td>
+						<td class="actions">
+							<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/comments/%d/delete", c.ID)) }>
+								<button class="btn secondary" type="submit" style="padding:0.2rem 0.5rem">delete</button>
+							</form>
+							<form method="post" action={ templ.SafeURL(fmt.Sprintf("/admin/comments/%d/block", c.ID)) } onsubmit="return confirm('Block this user and delete all their comments?')">
+								<button class="btn secondary" type="submit" style="padding:0.2rem 0.5rem">block</button>
+							</form>
+						</td>
+					</tr>
+				}
+			</tbody>
+		</table>
+	}
+}

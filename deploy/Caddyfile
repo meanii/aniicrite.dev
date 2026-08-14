@@ -1,0 +1,17 @@
+# Caddy reverse proxy for aniicrite.dev.
+# Auto-provisions Let's Encrypt TLS. The Go binary listens on 127.0.0.1:8080
+# (set APP_ADDR in .env); Caddy is the only public-facing process.
+
+aniicrite.dev {
+	encode zstd gzip
+	reverse_proxy 127.0.0.1:8080
+
+	# Long-cache immutable static assets.
+	@static path /static/* /uploads/*
+	header @static Cache-Control "public, max-age=604800"
+}
+
+# 301 the old domain to the new canonical host, preserving the path.
+meanii.dev, www.meanii.dev, www.aniicrite.dev {
+	redir https://aniicrite.dev{uri} permanent
+}

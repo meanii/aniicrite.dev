@@ -1,0 +1,107 @@
+package templates
+
+templ Layout(b Base) {
+	<!DOCTYPE html>
+	<html lang="en" data-theme="dark">
+		<head>
+			<meta charset="utf-8"/>
+			<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+			<title>{ b.FullTitle() }</title>
+			<meta name="description" content={ b.Description() }/>
+			<link rel="canonical" href={ b.Meta.Canonical }/>
+			<link rel="alternate" type="application/rss+xml" title={ b.Site.Title } href="/index.xml"/>
+			<link rel="icon" href="/static/favicon.svg" type="image/svg+xml"/>
+			<link rel="stylesheet" href="/static/css/style.css"/>
+			<link rel="stylesheet" href="/static/css/chroma.css"/>
+			<meta name="theme-color" content="#14161a"/>
+			<!-- OpenGraph / Twitter -->
+			<meta property="og:site_name" content={ b.Site.Title }/>
+			<meta property="og:title" content={ b.FullTitle() }/>
+			<meta property="og:description" content={ b.Description() }/>
+			<meta property="og:type" content={ b.OGType() }/>
+			<meta property="og:url" content={ b.Meta.Canonical }/>
+			<meta property="og:image" content={ b.OGImageURL() }/>
+			<meta name="twitter:card" content="summary_large_image"/>
+			<meta name="twitter:image" content={ b.OGImageURL() }/>
+			if b.Meta.Article {
+				if s := b.PublishedISO(); s != "" {
+					<meta property="article:published_time" content={ s }/>
+				}
+				if s := b.ModifiedISO(); s != "" {
+					<meta property="article:modified_time" content={ s }/>
+				}
+				<meta property="article:author" content={ b.Site.Author }/>
+				for _, t := range b.Meta.Tags {
+					<meta property="article:tag" content={ t }/>
+				}
+			}
+			@templ.Raw(b.LDJSONScript())
+			<script>
+				(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+			</script>
+		</head>
+		<body class="notransition">
+			if b.Admin {
+				@adminNav(b)
+			} else {
+				@siteNav(b)
+			}
+			<main class="wrap">
+				{ children... }
+			</main>
+			@footer(b.Site)
+			<script src="/static/js/theme.js"></script>
+			<script src="/static/js/htmx.min.js"></script>
+		</body>
+	</html>
+}
+
+templ siteNav(b Base) {
+	<header class="site-header">
+		<div class="wrap">
+			<nav class="nav">
+				<a href="/" class="brand">{ b.Site.Author }</a>
+				<div class="links">
+					<a href="/" class={ isActive(b.Nav, "home") }>Home</a>
+					<a href="/posts/" class={ isActive(b.Nav, "posts") }>Posts</a>
+					<a href="/projects/" class={ isActive(b.Nav, "projects") }>Projects</a>
+					<a href="/about/" class={ isActive(b.Nav, "about") }>About</a>
+					<button id="theme-toggle" type="button">◐ light</button>
+				</div>
+			</nav>
+		</div>
+	</header>
+}
+
+templ adminNav(b Base) {
+	<header class="site-header admin-bar">
+		<div class="wrap">
+			<nav class="nav">
+				<a href="/admin" class="brand">admin</a>
+				<div class="links">
+					<a href="/admin/posts">Posts</a>
+					<a href="/admin/projects">Projects</a>
+					<a href="/admin/comments">Comments</a>
+					<a href="/" target="_blank">View site ↗</a>
+					<form method="post" action="/admin/logout" style="display:inline">
+						<button class="btn secondary" type="submit" style="padding:0.2rem 0.6rem">Log out</button>
+					</form>
+				</div>
+			</nav>
+		</div>
+	</header>
+}
+
+templ footer(s Site) {
+	<footer class="site-footer">
+		<div class="wrap">
+			<div class="socials">
+				for _, s := range s.Socials {
+					<a href={ templ.SafeURL(s.URL) } rel="me noopener" target="_blank">{ s.Label }</a>
+				}
+				<a href="/index.xml">RSS</a>
+			</div>
+			<div>© { s.Author }</div>
+		</div>
+	</footer>
+}
