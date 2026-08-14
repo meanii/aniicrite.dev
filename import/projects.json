@@ -1,0 +1,90 @@
+[
+  {
+    "title": "tcp.chat",
+    "description": "A raw TCP chat application that facilitates easy communication with others and allows users to join public chats.",
+    "url": "https://github.com/meanii/tcp.chat",
+    "repo_url": "https://github.com/meanii/tcp.chat",
+    "tags": ["2024", "Go"],
+    "sort_order": 1
+  },
+  {
+    "title": "aws-lambda-hls-enc",
+    "description": "Written in Go: fast, efficient HLS file encryption within AWS Lambda. Encrypts HLS files directly from a Lambda function, adding flexibility and scalability to media streaming workflows on AWS.",
+    "url": "https://github.com/meanii/aws-lambda-hls-enc",
+    "repo_url": "https://github.com/meanii/aws-lambda-hls-enc",
+    "tags": ["2024", "Go", "AWS"],
+    "sort_order": 2
+  },
+  {
+    "title": "imgax",
+    "description": "A Golang-based AI image API service — straightforward and fast. Performs a range of AI-powered image tasks including background removal and background replacement.",
+    "url": "https://github.com/meanii/imgax",
+    "repo_url": "https://github.com/meanii/imgax",
+    "tags": ["2024", "Go", "AI"],
+    "sort_order": 3
+  },
+  {
+    "title": "streaming-server",
+    "description": "RTMP server for multimedia / video streaming using Nginx and the nginx-rtmp-module.",
+    "url": "https://github.com/meanii/streaming-server",
+    "repo_url": "https://github.com/meanii/streaming-server",
+    "tags": ["2023", "Nginx", "Streaming"],
+    "sort_order": 4
+  },
+  {
+    "title": "downly",
+    "description": "A simple Telegram bot that downloads files from the internet and uploads them to Telegram.",
+    "url": "https://github.com/meanii/downly",
+    "repo_url": "https://github.com/meanii/downly",
+    "tags": ["2023", "Telegram"],
+    "sort_order": 5
+  },
+  {
+    "title": "sync.ssh",
+    "description": "A CLI that helps you keep important files/directories synced in GitHub.",
+    "url": "https://github.com/meanii/sync.ssh",
+    "repo_url": "https://github.com/meanii/sync.ssh",
+    "tags": ["2022", "CLI"],
+    "sort_order": 6
+  },
+  {
+    "title": "touka.ssh",
+    "description": "An SSH manager that lets you manage all of your VPSs without keeping your password.",
+    "url": "https://github.com/meanii/touka.ssh",
+    "repo_url": "https://github.com/meanii/touka.ssh",
+    "tags": ["2022", "CLI", "SSH"],
+    "sort_order": 7
+  },
+  {
+    "title": "Stella",
+    "description": "The first Telegram group-management bot built in Pyrogram.",
+    "url": "https://github.com/SpookyGang/Stella",
+    "repo_url": "https://github.com/SpookyGang/Stella",
+    "tags": ["2021", "Python", "Telegram"],
+    "sort_order": 8
+  },
+  {
+    "title": "session maker",
+    "description": "A bot that creates session strings for Pyrogram and Telethon.",
+    "url": "https://github.com/meanii/sessionMaker",
+    "repo_url": "https://github.com/meanii/sessionMaker",
+    "tags": ["2021", "Python", "Telegram"],
+    "sort_order": 9
+  },
+  {
+    "title": "spotify_userbot",
+    "description": "A userbot that updates a Telegram user's biography according to their current Spotify playback.",
+    "url": "https://github.com/meanii/spotify_userbot",
+    "repo_url": "https://github.com/meanii/spotify_userbot",
+    "tags": ["2020", "Python"],
+    "sort_order": 10
+  },
+  {
+    "title": "Search4",
+    "description": "An OSINT tool that helps you find people on the internet. Small and fast.",
+    "url": "https://github.com/meanii/Search4",
+    "repo_url": "https://github.com/meanii/Search4",
+    "tags": ["2019", "OSINT"],
+    "sort_order": 11
+  }
+]

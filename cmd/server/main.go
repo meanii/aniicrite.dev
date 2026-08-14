@@ -36,6 +36,11 @@ func main() {
 				log.Fatal(err)
 			}
 			return
+		case "import-projects":
+			if err := runImportProjects(os.Args[2:]); err != nil {
+				log.Fatal(err)
+			}
+			return
 		}
 	}
 	if err := run(); err != nil {
@@ -131,6 +136,28 @@ func runImport(args []string) error {
 		return err
 	}
 	log.Printf("imported %d posts from %s", n, args[0])
+	return nil
+}
+
+// runImportProjects imports projects from a JSON file into the store.
+func runImportProjects(args []string) error {
+	if len(args) < 1 {
+		return fmt.Errorf("usage: server import-projects <file.json>")
+	}
+	cfg := config.Load()
+	if err := os.MkdirAll(cfg.DataDir, 0o755); err != nil {
+		return err
+	}
+	sqldb, err := db.Open(filepath.Join(cfg.DataDir, "site.db"))
+	if err != nil {
+		return err
+	}
+	defer sqldb.Close()
+	n, err := importer.ImportProjectsFile(context.Background(), models.New(sqldb), args[0])
+	if err != nil {
+		return err
+	}
+	log.Printf("imported %d projects from %s", n, args[0])
 	return nil
 }
 

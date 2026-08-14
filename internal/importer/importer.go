@@ -13,6 +13,7 @@ package importer
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -117,4 +118,50 @@ func split(content string) (map[string]string, string, error) {
 		meta[strings.TrimSpace(k)] = strings.TrimSpace(v)
 	}
 	return meta, strings.TrimSpace(body), nil
+}
+
+// projectFile is one entry in the projects JSON import file.
+type projectFile struct {
+	Title       string   `json:"title"`
+	Slug        string   `json:"slug"`
+	Description string   `json:"description"`
+	URL         string   `json:"url"`
+	RepoURL     string   `json:"repo_url"`
+	Tags        []string `json:"tags"`
+	SortOrder   int      `json:"sort_order"`
+	Status      string   `json:"status"`
+}
+
+// ImportProjectsFile imports projects from a JSON array file, returning the count.
+func ImportProjectsFile(ctx context.Context, store *models.Store, path string) (int, error) {
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		return 0, err
+	}
+	var entries []projectFile
+	if err := json.Unmarshal(raw, &entries); err != nil {
+		return 0, fmt.Errorf("parse %s: %w", filepath.Base(path), err)
+	}
+	for i, e := range entries {
+		slug := e.Slug
+		if slug == "" {
+			slug = models.Slugify(e.Title)
+		}
+		descHTML, err := markdown.Render(e.Description)
+		if err != nil {
+			return i, err
+		}
+		status := models.StatusPublished
+		if e.Status == models.StatusDraft {
+			status = models.StatusDraft
+		}
+		in := models.ProjectInput{
+			Slug: slug, Title: e.Title, DescMD: e.Description, DescHTML: descHTML,
+			URL: e.URL, RepoURL: e.RepoURL, SortOrder: e.SortOrder, Status: status, Tags: e.Tags,
+		}
+		if err := store.ImportProject(ctx, in); err != nil {
+			return i, fmt.Errorf("import %q: %w", e.Title, err)
+		}
+	}
+	return len(entries), nil
 }

@@ -78,6 +78,44 @@ func (s *Store) UpdateProject(ctx context.Context, id int64, in ProjectInput) er
 	return tx.Commit()
 }
 
+// ImportProject upserts a project by slug (idempotent migration helper).
+func (s *Store) ImportProject(ctx context.Context, in ProjectInput) error {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	var id int64
+	err = tx.QueryRowContext(ctx, `SELECT id FROM projects WHERE slug = ?`, in.Slug).Scan(&id)
+	switch err {
+	case nil:
+		if _, err = tx.ExecContext(ctx, `UPDATE projects SET
+			title=?, desc_md=?, desc_html=?, url=?, repo_url=?, sort_order=?, status=?,
+			updated_at=strftime('%Y-%m-%dT%H:%M:%SZ','now') WHERE id=?`,
+			in.Title, in.DescMD, in.DescHTML, in.URL, in.RepoURL, in.SortOrder, in.Status, id); err != nil {
+			return err
+		}
+	case sql.ErrNoRows:
+		res, err := tx.ExecContext(ctx, `INSERT INTO projects
+			(slug, title, desc_md, desc_html, url, repo_url, sort_order, status)
+			VALUES (?,?,?,?,?,?,?,?)`,
+			in.Slug, in.Title, in.DescMD, in.DescHTML, in.URL, in.RepoURL, in.SortOrder, in.Status)
+		if err != nil {
+			return err
+		}
+		if id, err = res.LastInsertId(); err != nil {
+			return err
+		}
+	default:
+		return err
+	}
+	if err := setProjectTags(ctx, tx, id, in.Tags); err != nil {
+		return err
+	}
+	return tx.Commit()
+}
+
 // DeleteProject removes a project.
 func (s *Store) DeleteProject(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `DELETE FROM projects WHERE id = ?`, id)
