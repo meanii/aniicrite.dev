@@ -40,6 +40,7 @@ func (h *Handler) Posts(w http.ResponseWriter, r *http.Request) {
 		totalPages = 1
 	}
 	b := h.base(r, "posts", templates.Meta{Title: "Posts"})
+	b.HTMX = true // live search
 	h.render(w, r, http.StatusOK, templates.PostsPage(b, posts, page, totalPages))
 }
 
@@ -70,6 +71,11 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 	}
+	older, newer, err := h.store.AdjacentPosts(r.Context(), p)
+	if err != nil {
+		h.serverError(w, r, err)
+		return
+	}
 
 	meta := templates.Meta{
 		Title:       p.Title,
@@ -82,7 +88,8 @@ func (h *Handler) Post(w http.ResponseWriter, r *http.Request) {
 		Tags:        tagNames(p.Tags),
 	}
 	b := h.base(r, "posts", meta)
-	h.render(w, r, http.StatusOK, templates.PostPage(b, p, comments, h.loginURL(r)))
+	b.HTMX = h.site.CommentsEnabled && b.User != nil // the comment form posts via hx-post
+	h.render(w, r, http.StatusOK, templates.PostPage(b, p, older, newer, comments, h.loginURL(r)))
 }
 
 // Projects renders the projects page.

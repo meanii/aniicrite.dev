@@ -37,7 +37,7 @@ templ Layout(b Base) {
 			}
 			@templ.Raw(b.LDJSONScript())
 			<script>
-				(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.setAttribute('data-theme',t);}catch(e){}})();
+				(function(){try{var t=localStorage.getItem('theme');if(!t){t=(window.matchMedia&&window.matchMedia('(prefers-color-scheme: light)').matches)?'light':'dark';}document.documentElement.setAttribute('data-theme',t);var m=document.querySelector('meta[name="theme-color"]');if(m){m.setAttribute('content',t==='light'?'#fbfaf7':'#14161a');}}catch(e){}})();
 			</script>
 		</head>
 		<body class="notransition">
@@ -51,7 +51,9 @@ templ Layout(b Base) {
 			</main>
 			@footer(b.Site)
 			<script src="/static/js/theme.js"></script>
-			<script src="/static/js/htmx.min.js"></script>
+			if b.Admin || b.HTMX {
+				<script src="/static/js/htmx.min.js"></script>
+			}
 		</body>
 	</html>
 }
@@ -66,7 +68,7 @@ templ siteNav(b Base) {
 					<a href="/posts/" class={ isActive(b.Nav, "posts") }>Posts</a>
 					<a href="/projects/" class={ isActive(b.Nav, "projects") }>Projects</a>
 					<a href="/about/" class={ isActive(b.Nav, "about") }>About</a>
-					<button id="theme-toggle" type="button">◐ light</button>
+					<button id="theme-toggle" type="button" title="Switch theme"><span class="glyph" aria-hidden="true">◐</span> <span class="label">light</span></button>
 				</div>
 			</nav>
 		</div>

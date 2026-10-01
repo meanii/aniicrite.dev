@@ -1,12 +1,13 @@
 # Caddy reverse proxy for aniicrite.dev.
-# Auto-provisions Let's Encrypt TLS. The Go binary listens on 127.0.0.1:8080
-# (set APP_ADDR in .env); Caddy is the only public-facing process.
+# Auto-provisions Let's Encrypt TLS. The Go binary listens on 127.0.0.1:8091
+# (the compose.yaml port mapping); Caddy is the only public-facing process.
+# This block lives inside the server's shared /etc/caddy/Caddyfile.
 
 aniicrite.dev {
 	encode zstd gzip
-	reverse_proxy 127.0.0.1:8080
+	reverse_proxy http://127.0.0.1:8091
 
-	# Long-cache immutable static assets.
+	# Long-cache static assets; HTML stays uncached so edits show immediately.
 	@static path /static/* /uploads/*
 	header @static Cache-Control "public, max-age=604800"
 }

@@ -10,9 +10,12 @@ import (
 	chromahtml "github.com/alecthomas/chroma/v2/formatters/html"
 	"github.com/yuin/goldmark"
 	highlighting "github.com/yuin/goldmark-highlighting/v2"
+	"github.com/yuin/goldmark/ast"
 	"github.com/yuin/goldmark/extension"
 	"github.com/yuin/goldmark/parser"
 	"github.com/yuin/goldmark/renderer/html"
+	"github.com/yuin/goldmark/text"
+	"github.com/yuin/goldmark/util"
 )
 
 // md is safe for concurrent use once constructed.
@@ -28,11 +31,49 @@ var md = goldmark.New(
 	),
 	goldmark.WithParserOptions(
 		parser.WithAutoHeadingID(),
+		parser.WithASTTransformers(util.Prioritized(postTransformer{}, 1000)),
 	),
 	goldmark.WithRendererOptions(
 		html.WithUnsafe(), // trusted single-author content
 	),
 )
+
+// postTransformer adds a self-link to every h2–h4 (so headings can be shared
+// by URL) and marks images as lazily loaded.
+type postTransformer struct{}
+
+func (postTransformer) Transform(doc *ast.Document, _ text.Reader, _ parser.Context) {
+	_ = ast.Walk(doc, func(n ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch v := n.(type) {
+		case *ast.Image:
+			v.SetAttributeString("loading", []byte("lazy"))
+			v.SetAttributeString("decoding", []byte("async"))
+		case *ast.Heading:
+			if v.Level < 2 || v.Level > 4 {
+				return ast.WalkContinue, nil
+			}
+			id, ok := v.AttributeString("id")
+			if !ok {
+				return ast.WalkContinue, nil
+			}
+			idb, ok := id.([]byte)
+			if !ok {
+				return ast.WalkContinue, nil
+			}
+			link := ast.NewLink()
+			link.Destination = append([]byte("#"), idb...)
+			link.SetAttributeString("class", []byte("anchor"))
+			link.SetAttributeString("title", []byte("Link to this section"))
+			link.AppendChild(link, ast.NewString([]byte("#")))
+			v.AppendChild(v, link)
+			return ast.WalkSkipChildren, nil
+		}
+		return ast.WalkContinue, nil
+	})
+}
 
 // Render converts Markdown source to HTML.
 func Render(src string) (string, error) {

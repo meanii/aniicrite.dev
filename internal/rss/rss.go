@@ -11,12 +11,16 @@ import (
 
 // Feed renders an RSS 2.0 document for the given published posts.
 func Feed(baseURL, title, description, author string, posts []models.Post) ([]byte, error) {
+	type encoded struct {
+		Text string `xml:",cdata"`
+	}
 	type item struct {
-		Title   string `xml:"title"`
-		Link    string `xml:"link"`
-		GUID    string `xml:"guid"`
-		PubDate string `xml:"pubDate"`
-		Desc    string `xml:"description"`
+		Title   string   `xml:"title"`
+		Link    string   `xml:"link"`
+		GUID    string   `xml:"guid"`
+		PubDate string   `xml:"pubDate"`
+		Desc    string   `xml:"description"`
+		Content *encoded `xml:"content:encoded,omitempty"`
 	}
 	type channel struct {
 		Title       string `xml:"title"`
@@ -26,27 +30,39 @@ func Feed(baseURL, title, description, author string, posts []models.Post) ([]by
 		Items       []item `xml:"item"`
 	}
 	type rss struct {
-		XMLName xml.Name `xml:"rss"`
-		Version string   `xml:"version,attr"`
-		Channel channel  `xml:"channel"`
+		XMLName   xml.Name `xml:"rss"`
+		Version   string   `xml:"version,attr"`
+		ContentNS string   `xml:"xmlns:content,attr"`
+		Channel   channel  `xml:"channel"`
 	}
 
 	ch := channel{Title: title, Link: baseURL + "/", Description: description, Generator: "aniicrite.dev (Go)"}
 	for _, p := range posts {
 		link := baseURL + "/posts/" + p.Slug + "/"
-		ch.Items = append(ch.Items, item{
+		it := item{
 			Title:   p.Title,
 			Link:    link,
 			GUID:    link,
 			PubDate: p.Date().UTC().Format(time.RFC1123Z),
 			Desc:    p.Summary,
-		})
+		}
+		if p.BodyHTML != "" {
+			it.Content = &encoded{Text: absolutize(baseURL, p.BodyHTML)}
+		}
+		ch.Items = append(ch.Items, it)
 	}
-	body, err := xml.MarshalIndent(rss{Version: "2.0", Channel: ch}, "", "  ")
+	body, err := xml.MarshalIndent(rss{Version: "2.0", ContentNS: "http://purl.org/rss/1.0/modules/content/", Channel: ch}, "", "  ")
 	if err != nil {
 		return nil, err
 	}
 	return append([]byte(xml.Header), body...), nil
+}
+
+// absolutize rewrites root-relative href/src attributes so feed readers,
+// which have no base URL, can follow links and load images.
+func absolutize(baseURL, html string) string {
+	r := strings.NewReplacer(`href="/`, `href="`+baseURL+`/`, `src="/`, `src="`+baseURL+`/`)
+	return r.Replace(html)
 }
 
 // Sitemap renders a sitemap.xml covering the static routes, every post, and

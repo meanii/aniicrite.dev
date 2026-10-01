@@ -61,6 +61,7 @@ type Base struct {
 	Meta  Meta
 	Nav   string // active nav key: home|posts|projects|about
 	Admin bool
+	HTMX  bool // page uses hx-* attributes; admin pages always do
 	User  *auth.User
 }
 
@@ -116,6 +117,16 @@ func fmtDate(t time.Time) string {
 		return ""
 	}
 	return t.Format("2 Jan 2006")
+}
+
+// updatedOn returns the post's last-edit time when it falls on a later day
+// than the publish date, so a same-day touch-up is not announced as an update.
+func updatedOn(p models.Post) (time.Time, bool) {
+	pub, upd := p.Date().UTC(), p.UpdatedAt.UTC()
+	if upd.IsZero() || !upd.After(pub) || upd.Format("2006-01-02") == pub.Format("2006-01-02") {
+		return time.Time{}, false
+	}
+	return upd, true
 }
 
 // rfc3339 renders a machine date for <time datetime>.

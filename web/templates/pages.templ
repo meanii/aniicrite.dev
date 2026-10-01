@@ -66,14 +66,16 @@ templ postListItems(posts []models.Post) {
 	}
 }
 
-templ PostPage(b Base, p models.Post, comments []models.Comment, loginURL string) {
+templ PostPage(b Base, p models.Post, older, newer models.Post, comments []models.Comment, loginURL string) {
 	@Layout(b) {
 		<article class="post">
 			<h1>{ p.Title }</h1>
 			<div class="meta">
 				<time datetime={ rfc3339(p.Date()) }>{ fmtDate(p.Date()) }</time>
 				· { fmt.Sprint(p.ReadingMinutes) } min read
-				· { fmt.Sprint(p.ViewCount) } views
+				if upd, ok := updatedOn(p); ok {
+					· updated <time datetime={ rfc3339(upd) }>{ fmtDate(upd) }</time>
+				}
 			</div>
 			if len(p.Tags) > 0 {
 				@tagLinks(p.Tags)
@@ -83,6 +85,24 @@ templ PostPage(b Base, p models.Post, comments []models.Comment, loginURL string
 			}
 			@templ.Raw(p.BodyHTML)
 		</article>
+		if older.ID != 0 || newer.ID != 0 {
+			<nav class="post-nav" aria-label="Adjacent posts">
+				if older.ID != 0 {
+					<a href={ templ.SafeURL("/posts/" + older.Slug + "/") } rel="prev">
+						<span class="meta">← Older</span>
+						<span class="title">{ older.Title }</span>
+					</a>
+				} else {
+					<span></span>
+				}
+				if newer.ID != 0 {
+					<a href={ templ.SafeURL("/posts/" + newer.Slug + "/") } rel="next" class="next">
+						<span class="meta">Newer →</span>
+						<span class="title">{ newer.Title }</span>
+					</a>
+				}
+			</nav>
+		}
 		if b.Site.CommentsEnabled {
 			@commentsSection(b, p, comments, loginURL)
 		}
@@ -91,7 +111,9 @@ templ PostPage(b Base, p models.Post, comments []models.Comment, loginURL string
 
 templ commentsSection(b Base, p models.Post, comments []models.Comment, loginURL string) {
 	<section class="comments">
-		<h2>{ fmt.Sprint(len(comments)) } comments</h2>
+		if len(comments) > 0 {
+			<h2>{ fmt.Sprint(len(comments)) } comments</h2>
+		}
 		<div id="comments-list">
 			for _, c := range comments {
 				@CommentItem(c)

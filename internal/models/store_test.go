@@ -114,3 +114,31 @@ func TestCommentsAndBlocking(t *testing.T) {
 		t.Fatalf("user 42 should be blocked")
 	}
 }
+
+func TestAdjacentPosts(t *testing.T) {
+	ctx := context.Background()
+	s := newStore(t)
+	for _, slug := range []string{"first", "second", "third"} {
+		if _, err := s.CreatePost(ctx, models.PostInput{Slug: slug, Title: slug, Status: models.StatusPublished}); err != nil {
+			t.Fatal(err)
+		}
+	}
+	if _, err := s.CreatePost(ctx, models.PostInput{Slug: "draft", Title: "draft", Status: models.StatusDraft}); err != nil {
+		t.Fatal(err)
+	}
+	mid, err := s.PostBySlug(ctx, "second", false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	older, newer, err := s.AdjacentPosts(ctx, mid)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if older.Slug != "first" || newer.Slug != "third" {
+		t.Errorf("adjacent of second = %q / %q, want first / third", older.Slug, newer.Slug)
+	}
+	last, _ := s.PostBySlug(ctx, "third", false)
+	if _, newer, err = s.AdjacentPosts(ctx, last); err != nil || newer.ID != 0 {
+		t.Errorf("newest post should have no newer neighbour (draft excluded): %+v %v", newer, err)
+	}
+}

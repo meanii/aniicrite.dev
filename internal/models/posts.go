@@ -249,6 +249,32 @@ func (s *Store) listPosts(ctx context.Context, publishedOnly bool, limit, offset
 	return posts, total, nil
 }
 
+// AdjacentPosts returns the published posts immediately older and newer than
+// p by publish date (zero-valued when there is none). Ties on the timestamp
+// fall back to id so the ordering matches listPosts.
+func (s *Store) AdjacentPosts(ctx context.Context, p Post) (older, newer Post, err error) {
+	ts := isoTime(p.Date())
+	const date = `COALESCE(published_at, created_at)`
+	older, err = s.oneAdjacent(ctx, `SELECT `+postCols+` FROM posts WHERE status = 'published'
+		AND (`+date+` < ? OR (`+date+` = ? AND id < ?))
+		ORDER BY `+date+` DESC, id DESC LIMIT 1`, ts, ts, p.ID)
+	if err != nil {
+		return
+	}
+	newer, err = s.oneAdjacent(ctx, `SELECT `+postCols+` FROM posts WHERE status = 'published'
+		AND (`+date+` > ? OR (`+date+` = ? AND id > ?))
+		ORDER BY `+date+` ASC, id ASC LIMIT 1`, ts, ts, p.ID)
+	return
+}
+
+func (s *Store) oneAdjacent(ctx context.Context, q string, args ...any) (Post, error) {
+	p, err := scanPost(s.db.QueryRowContext(ctx, q, args...))
+	if err == sql.ErrNoRows {
+		return Post{}, nil
+	}
+	return p, err
+}
+
 // IncrementViews bumps a post's view counter.
 func (s *Store) IncrementViews(ctx context.Context, id int64) error {
 	_, err := s.db.ExecContext(ctx, `UPDATE posts SET view_count = view_count + 1 WHERE id = ?`, id)
