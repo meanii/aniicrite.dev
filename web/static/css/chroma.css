@@ -81,8 +81,8 @@
 /* TextWhitespace */ .chroma .w { color: #6e7681 }
 
 /* --- light --- */
-/* Background */ .bg { background-color: #f7f7f7; }
-/* PreWrapper */ [data-theme="light"] .chroma { background-color: #f7f7f7; -webkit-text-size-adjust: none; }
+/* Background */ [data-theme="light"] .bg { color: #1f2328; background-color: var(--bg-soft, #f2f0ea); }
+/* PreWrapper */ [data-theme="light"] .chroma { color: #1f2328; background-color: var(--bg-soft, #f2f0ea); -webkit-text-size-adjust: none; }
 /* Error */ [data-theme="light"] .chroma .err { color: #f6f8fa; background-color: #82071e }
 /* LineLink */ [data-theme="light"] .chroma .lnlinks { outline: none; text-decoration: none; color: inherit }
 /* LineTableTD */ [data-theme="light"] .chroma .lntd { vertical-align: top; padding: 0; margin: 0; border: 0; }
@@ -153,4 +153,4 @@
 /* GenericInserted */ [data-theme="light"] .chroma .gi { color: #116329; background-color: #dafbe1 }
 /* GenericOutput */ [data-theme="light"] .chroma .go { color: #1f2328 }
 /* GenericUnderline */ [data-theme="light"] .chroma .gl { text-decoration: underline }
-/* TextWhitespace */ [data-theme="light"] .chroma .w { color: #ffffff }
+/* TextWhitespace */ [data-theme="light"] .chroma .w { color: #7f7f7f }
