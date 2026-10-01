@@ -1,69 +1,50 @@
 ---
-title: DuckDB — SQLite's analytics cousin
+title: Querying exported CSVs with DuckDB
 slug: duckdb
 date: 2026-08-12T00:00:00Z
 tags: DuckDB, SQL, data, analytics
 status: published
-summary: How I use DuckDB to query exported CSVs locally — an in-process, columnar SQL database for the analytics half of the work.
+summary: DuckDB is an in-process SQL database like SQLite, but columnar and built for analytics. I use it to run SQL straight over CSV exports on my laptop without loading anything first.
 ---
-I reach for SQLite constantly, but it's built for transactions — lots of small reads and writes, one row at a time. When I actually need to *analyze* data — scan a few hundred thousand rows, group, aggregate, join — it's the wrong shape. DuckDB is the tool for that half. It's an in-process SQL database like SQLite, but columnar and built for analytics.
+Most of the data I need to look at arrives as a CSV. A database dump, the export button in some dashboard, a report someone sent me. For years the options were a spreadsheet or a throwaway pandas script. Now I use DuckDB.
 
-"In-process" is the part that matters. There's no server to run, no port, no daemon. It's a library you import, or a single CLI binary, and it runs right on your machine.
+DuckDB is an in-process SQL database in the same spirit as SQLite. There is no server, no port and no daemon. It is either a library you import or a single CLI binary. The difference is that SQLite stores rows and is built for transactions, while DuckDB stores columns and is built for scanning, grouping and joining a lot of rows at once. Same shape of tool, opposite kind of workload.
 
-## The feature that sold me: query files in place
+## You query the file directly
 
-Most databases make you load data before you can query it. DuckDB doesn't. You point SQL straight at a file:
+This is the feature that made it stick. There is no import step. The file name goes where a table name would go:
 
 ```sql
--- a CSV, no import, no schema, no CREATE TABLE
 SELECT count(*), avg(amount)
 FROM 'transactions.csv';
 
--- group and sort, still straight off the file
 SELECT category, sum(amount) AS total
 FROM 'transactions.csv'
 GROUP BY category
 ORDER BY total DESC;
 ```
 
-It reads CSV, Parquet, and JSON natively, figures out the schema itself, and being columnar, a query that touches 2 of 40 columns reads 2 columns, not all 40.
+It reads CSV, Parquet and JSON, works out the schema itself, and because it is columnar a query that touches two of forty columns only reads those two.
 
-## How I actually use it
-
-Mostly on CSVs I've exported from somewhere — a database dump, an app's "export" button, a report — sitting in a folder on my laptop. Instead of opening them in a spreadsheet or writing a pandas script, I just run SQL over them locally:
+From the shell it is a one-liner:
 
 ```bash
 duckdb -c "SELECT status, count(*) FROM 'export.csv' GROUP BY status"
 ```
 
-That's the whole workflow. Nothing gets uploaded anywhere, there's no database to load into first, and I already know SQL — so a question like "how many of these, grouped by month, over some threshold" is one query instead of a script.
+A folder of exports can be treated as one table with `FROM 'exports/*.csv'`. When the type sniffing guesses wrong, which happens with dates and with columns that are mostly numbers plus one stray string, `read_csv` takes explicit options. If I want to keep a cleaned up result, `COPY (...) TO 'clean.parquet'` writes it back out.
 
-A few things that make it stick for this:
-
-- **Point it at many files at once.** A folder of exports becomes one table: `FROM 'exports/*.csv'`.
-- **Messy CSVs mostly just work.** It sniffs types and delimiters; when it guesses wrong, `read_csv` takes explicit options.
-- **Save the cleaned result** back out to Parquet or a new CSV with `COPY (…) TO 'clean.parquet'`, if I want to keep it.
-
-If I'm already in Python, the same thing works there and hands back a DataFrame with no copy:
+In Python it hands back a DataFrame without copying:
 
 ```python
 import duckdb
 df = duckdb.sql("SELECT * FROM 'export.csv' WHERE amount > 1000").df()
 ```
 
-(It can also read Parquet over HTTP or S3 with the `httpfs` extension — I just don't need that; my data's already local.)
+It can also read Parquet over HTTP or from S3 with the httpfs extension. I have not needed that. My data is already on the laptop and nothing gets uploaded anywhere, which is part of why I like this workflow.
 
-## DuckDB vs SQLite
+## Where it does not fit
 
-They look similar and get used together, but they're opposites by design:
+It is not a server database. There is no network protocol and only one process can write at a time, so it is the wrong choice for an application with many concurrent writers. That is still SQLite or Postgres. DuckDB is for asking questions about data you already have.
 
-- **SQLite** is a row store built for OLTP — transactions, point lookups, many small writes. It runs your app's state.
-- **DuckDB** is a column store built for OLAP — scans, aggregates, and joins over lots of rows at once. It answers questions about your data.
-
-Same "embedded, single file, no server" spirit; different engine for a different job.
-
-## When not to use it
-
-It's not a server database. There's no network protocol and it's single-writer, so it's the wrong pick for many clients doing concurrent writes — that's SQLite or Postgres territory. DuckDB is for the read-heavy, analytical side.
-
-It's MIT-licensed, from the CWI research group, and ships as a CLI binary plus libraries for Python, R, Go, Node, and more — a download, not an install-and-configure afternoon. If you like SQLite for how little it asks of you, DuckDB is the same deal for the analytics half.
+It is MIT licensed, comes out of the CWI database research group, and ships as a CLI binary plus libraries for Python, R, Go and Node. Installing it is downloading one file. If you like SQLite for how little it asks of you, DuckDB asks about the same.

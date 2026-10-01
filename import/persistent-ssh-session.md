@@ -4,26 +4,28 @@ slug: persistent-ssh-session
 date: 2023-11-04T00:00:00Z
 tags: SSH, autossh, Linux
 status: published
-summary: assh — a small wrapper that reconnects your SSH session when the network drops.
+summary: assh is a small wrapper around autossh that reconnects an SSH session when the network drops.
 ---
 ![ssh-session](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*iVYccCsXIgpYvmC3zMnLBA.png)
 
-I work over SSH a lot, and flaky networks drop the connection at the worst possible time. `assh` is a small wrapper I use that reconnects automatically when the link goes down, so I don't have to babysit the session.
+I spend a lot of the day in SSH sessions and my network is not reliable. The connection drops, the terminal hangs, and I reconnect by hand. I got tired of that and wrote assh, a small wrapper script that uses autossh to reconnect automatically when the link goes down.
 
-[Watch the demo](https://www.youtube.com/watch?v=EAjosu4AVGQ)
+There is a short [demo video](https://www.youtube.com/watch?v=EAjosu4AVGQ).
 
-## Installation
+## Install
 
 ```bash
 curl --silent -o- https://raw.githubusercontent.com/meanii/assh/main/install.sh | sudo bash
 ```
 
-It needs sudo because it installs the script to `/usr/local/bin/assh`.
+It asks for sudo because it copies the script to `/usr/local/bin/assh`. The script is short, so read it first if you prefer.
 
-## Usage
+## Use
 
 ```bash
 assh <ssh-connection-string>
 ```
 
-Source: <https://github.com/meanii/assh>
+Pass it the same connection string you would give `ssh`.
+
+The source is at [github.com/meanii/assh](https://github.com/meanii/assh).

@@ -4,36 +4,33 @@ slug: use-docker-as-nobody-uses-it
 date: 2022-04-11T00:00:00Z
 tags: Docker, DevOps
 status: published
-summary: Skip installing nvm and databases locally — run your dev stack straight from Docker images.
+summary: Instead of installing nvm, Node and MongoDB on my machine, I run the whole dev stack out of Docker images and delete it when the project is done.
 ---
-Setting up a MERN stack locally usually means installing nvm, picking a Node version, installing MongoDB, and then juggling versions when a package won't build. It piles up fast and the versions start fighting each other.
+Setting up a MERN project locally used to mean installing nvm, picking a Node version, installing MongoDB, and then fighting whichever package refused to build on that version. Do it for a few projects and the machine fills up with versions that disagree with each other.
 
-I stopped doing that. Instead I run the whole thing out of Docker images and keep my machine clean.
+I stopped. Now the whole stack runs out of Docker images and nothing gets installed on the host.
 
-### Install Docker
+## Install Docker
 
-Works on most Linux distros:
+On most Linux distributions:
 
 ```bash
 curl -o- https://get.docker.com | sh -x
 ```
 
-### Run a Node app
+## Run the Node app
 
-From your project directory:
+From the project directory:
 
 ```bash
 sudo docker run -it -v $(pwd):/srv -w /srv -p 3000:3000 node:current npm run start:dev
 ```
 
-- `-it` — interactive terminal
-- `-v` — mount the current dir into the container
-- `-w` — set the working directory
-- `-p` — forward the port
+`-it` gives you an interactive terminal, `-v` mounts the current directory into the container, `-w` sets the working directory and `-p` forwards the port.
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*jC1ETEU62n9wVQhVcEAyvw.png)
 
-Same idea for a Vite React project:
+A Vite project is the same command with a different port and script:
 
 ```bash
 sudo docker run -it -v $(pwd):/srv -w /srv -p 5173:5173 node:current npm run dev
@@ -41,12 +38,12 @@ sudo docker run -it -v $(pwd):/srv -w /srv -p 5173:5173 node:current npm run dev
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*nRjpvDFAaD5yuGDW0rAr1g.png)
 
-### Run MongoDB
+## Run MongoDB
 
 ```bash
 sudo docker run -d -p 27017:27017 --name my-demo-mongo mongo
 ```
 
-No Node versions on my host, no local Mongo, nothing to uninstall later. When I'm done with a project I delete the containers and that's it.
+No Node on the host, no local Mongo, nothing to uninstall later. When the project is done I delete the containers and the machine is as clean as it was before.
 
 ![](https://miro.medium.com/v2/resize:fit:1400/format:webp/1*16QMx1_smA-yr9DRyRgzVg.png)

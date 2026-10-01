@@ -4,22 +4,20 @@ slug: pocketid-sso
 date: 2026-08-08T00:00:00Z
 tags: homelab, SSO, OIDC, self-hosting
 status: published
-summary: One small OIDC provider with passkeys, so I stop keeping a separate login for every self-hosted app.
+summary: PocketID is a small OIDC provider with passkey login. I put it in front of the self-hosted apps so there is one login instead of one per app.
 ---
-Every self-hosted app wants its own account. A dozen apps means a dozen logins, a dozen password resets, and a dozen places to get security wrong. I put [PocketID](https://github.com/pocket-id/pocket-id) in front of them to fix that.
+Every self-hosted app wants its own user table. After a dozen apps that is a dozen logins, each with its own password reset flow and its own way of getting security wrong. I put [PocketID](https://github.com/pocket-id/pocket-id) in front of them so there is one login.
 
-PocketID is a small OIDC provider built around passkeys. It runs in its own container on port `1411`, and it's the only thing holding identity in the homelab. Any app that speaks OpenID Connect points at it as the identity provider instead of managing its own users.
+PocketID is a small OpenID Connect provider built around passkeys. It runs in its own container on port 1411 and it is the only thing in the homelab that holds identity. Any app that speaks OIDC is pointed at it as the identity provider and stops managing its own users.
 
-### Why PocketID specifically
+## Why this one
 
-- It's tiny and does one job — OIDC, nothing else.
-- It's passkey-first, so there's no master password to phish; I log in with the device I'm already holding.
-- It's easy to self-host: a single container and a database.
+It is small and does one job. It is passkey-first, so there is no master password to type and nothing to phish. I log in with the laptop or phone I am already holding. And it self-hosts without fuss: one container and a database.
 
-### How it fits together
+## How it fits
 
-Each OIDC-capable app gets a client entry in PocketID — a client ID, a secret, and a redirect URL. When I open the app, it bounces me to PocketID, I approve with a passkey, and I'm back in the app signed in. New device? I enrol one passkey in PocketID and every app follows.
+Each app gets a client entry in PocketID, which is a client ID, a secret and a redirect URL. Opening the app bounces me to PocketID, I approve with a passkey, and I am back in the app signed in. When I get a new device I enrol one passkey in PocketID and every app follows.
 
-For apps that don't support OIDC, I keep them behind the reverse proxy and don't expose them further. Not everything needs to be on the internet.
+Apps that do not support OIDC stay behind the reverse proxy on the LAN and are not exposed any further. Not everything needs to be reachable from outside.
 
-It's a small change but it's the one that made running this many services feel manageable instead of like a pile of separate accounts I'm slowly losing track of.
+It is a small change. It is also the one that made running this many services feel like one system instead of a pile of accounts I was slowly losing track of.

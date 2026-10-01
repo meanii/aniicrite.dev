@@ -4,17 +4,15 @@ slug: working-with-dot-env-in-golang
 date: 2024-03-31T00:00:00Z
 tags: Go, Viper, Config
 status: published
-summary: How I load .env variables into a typed struct in Go using Viper.
+summary: The small Viper setup I copy into Go projects to read a .env file into a typed struct.
 ---
-I use [Viper](https://github.com/spf13/viper) to read a `.env` file into a typed struct so the rest of the app never touches `os.Getenv` directly. Here's the setup I copy into most projects.
-
-Install it:
+I do not like `os.Getenv` scattered through a codebase. The variable names end up duplicated in a dozen places and a typo in one of them is a runtime surprise. In most Go projects I read the `.env` file once at startup into a struct using [Viper](https://github.com/spf13/viper), and the rest of the code takes the struct. This is the setup I copy from project to project.
 
 ```bash
 go get github.com/spf13/viper
 ```
 
-Define a struct for the variables you expect and load them in one place:
+One package holds the struct and the loader:
 
 ```go
 package configs
@@ -53,7 +51,7 @@ func LoadConfig() *Env {
 }
 ```
 
-Then load it once at startup and pass the struct around:
+Then main loads it once and passes it along:
 
 ```go
 package main
@@ -73,4 +71,4 @@ func main() {
 }
 ```
 
-That's the whole thing. The nice part is the `mapstructure` tags — the config is typed, so a missing or misspelled key shows up at load time instead of somewhere deep in a request.
+The `mapstructure` tags map each field to a variable name, so there is one place where the names are spelled out. If a key is misspelled, the field is empty when the config is printed at startup, not somewhere deep inside a request handler.

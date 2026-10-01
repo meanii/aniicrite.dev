@@ -4,17 +4,11 @@ slug: loki-s3-logs
 date: 2026-08-11T00:00:00Z
 tags: Loki, S3, Kubernetes, AWS, observability
 status: published
-summary: Shipping k8s and AWS service logs into Grafana Loki with S3 as the backend — one Helm chart, and about $1–2/month for a year of retention.
+summary: One Helm chart puts Kubernetes pod logs and the CloudWatch logs from RDS, Lambda and ElastiCache into Grafana Loki, with S3 as the store. A year of retention costs a dollar or two a month.
 ---
-Logs end up scattered — pod stdout in the cluster, RDS logs in CloudWatch, Lambda somewhere else — and every managed logging product wants real money to put them back together. I run Grafana Loki with S3 as the backend instead. One Helm chart, one UI for everything, and a year of retention costs a couple of dollars a month.
+On a typical AWS setup the logs are in four places. Pod output is in the cluster, RDS writes to CloudWatch, Lambda writes to CloudWatch under a different group, and whatever runs on plain EC2 is in files on the box. Every managed logging product will happily gather all of that for you and charge per gigabyte ingested, which adds up fast. I run Grafana Loki with S3 as the backend instead. It is one Helm chart, one Grafana to search in, and the storage bill for a year of logs is a couple of dollars a month.
 
-## Why this stack
-
-- **S3 is the cheapest place to keep logs**, and Loki compresses hard before writing.
-- **Low ops.** One Helm chart, and Loki has no schema to manage.
-- **No per-query cost**, unlike querying logs in S3 with Athena.
-- **One UI.** k8s and AWS service logs land in the same Grafana.
-- **Retention with auto-deletion**, so it doesn't grow forever.
+The reason it is cheap is that Loki does not index the log text. It indexes a small set of labels per stream and stores the compressed log lines as chunks in S3. A query scans the chunks that match the labels, so there is no per-query charge like Athena and no big index to pay for.
 
 ## The shape of it
 
@@ -26,7 +20,7 @@ ElastiCache   → CloudWatch ┼→ Fluent Bit (CW in) ─↑      ↓
 Lambda        → CloudWatch ┘                          Grafana
 ```
 
-Fluent Bit is the shipper. On every node it tails pod logs, and — the part people miss — it also **pulls AWS managed-service logs out of CloudWatch** with its `cloudwatch_logs` input. So RDS, ElastiCache, and Lambda land in the same place as your pods, without a separate pipeline. Loki groups everything into per-label streams, compresses them into chunks, and flushes to S3. Grafana queries it with LogQL.
+Fluent Bit runs on every node and tails the container logs. The part that is easy to miss is that Fluent Bit also has a `cloudwatch_logs` input, so the same agent can pull RDS, ElastiCache and Lambda logs out of CloudWatch and send them to Loki alongside the pod logs. There is no second pipeline.
 
 ```ini
 # k8s pod logs
@@ -41,7 +35,7 @@ Fluent Bit is the shipper. On every node it tails pod logs, and — the part peo
     Log_Group_Name /aws/rds/cluster/your-cluster/postgresql
     AWS_Region     us-east-1
 
-# don't lose logs if Loki is down
+# buffer to disk so a Loki restart does not drop logs
 [OUTPUT]
     Name                     loki
     Match                    *
@@ -49,9 +43,9 @@ Fluent Bit is the shipper. On every node it tails pod logs, and — the part peo
     storage.total_limit_size 1G
 ```
 
-## The one rule that keeps it fast
+## Labels
 
-Only use **low-cardinality** values as stream labels — `service`, `namespace`, `level`, `env`. Never label by `userId` or `requestId`; high-cardinality labels blow up Loki's index. Keep those in the log body and pull them out at query time with `| json`:
+Loki stays fast as long as the labels are low cardinality. Service, namespace, level and environment are fine. A user id or a request id as a label creates a new stream for every value and the index grows until queries crawl. Keep those in the log body and pull them out at query time:
 
 ```logql
 # all errors across services
@@ -64,9 +58,9 @@ Only use **low-cardinality** values as stream labels — `service`, `namespace`,
 sum by (level) (count_over_time({service="auth"} | json [5m]))
 ```
 
-## The cost, which is the whole point
+## What it costs
 
-Loki compresses raw logs 10–20×, so 10 GB/day of logs becomes ~0.5–1 GB/day on S3. Then S3 lifecycle rules tier it down before deleting:
+Loki compresses raw logs somewhere between 10 and 20 times, so 10 GB a day of logs lands as roughly 0.5 to 1 GB a day in S3. Lifecycle rules then move it to cheaper tiers before deleting it:
 
 ```
 0–30 days   → S3 Standard          $0.023/GB
@@ -75,7 +69,7 @@ Loki compresses raw logs 10–20×, so 10 GB/day of logs becomes ~0.5–1 GB/day
 365+ days   → deleted
 ```
 
-A full year of logs at 10 GB/day works out to roughly **$1–2/month**. Glacier Instant retrieves in milliseconds, so old logs query the same way as recent ones — just widen the time range in Grafana (recent logs are instant from cache; months-old logs take a few seconds while they come off S3).
+At 10 GB a day that is about $1 to $2 a month for a full year of history. Glacier Instant Retrieval returns objects in milliseconds, so old logs are queried the same way as new ones. You widen the time range in Grafana and wait a few seconds longer while the chunks come off S3.
 
 ```hcl
 resource "aws_s3_bucket_lifecycle_configuration" "loki_logs" {
@@ -85,14 +79,14 @@ resource "aws_s3_bucket_lifecycle_configuration" "loki_logs" {
     status = "Enabled"
     transition { days = 30  storage_class = "STANDARD_IA" }
     transition { days = 90  storage_class = "GLACIER_IR" }
-    expiration { days = 366 }   # 1 day after Loki's own retention, as a safety net
+    expiration { days = 366 }   # one day after Loki's own retention
   }
 }
 ```
 
-## The gotcha that doubles your bill
+## The CloudWatch double bill
 
-RDS, Lambda, and ElastiCache write to **CloudWatch by default**, so once Fluent Bit copies those logs into Loki you're paying for both. Set the CloudWatch log groups to **1-day retention** — long enough for Fluent Bit to pick them up, short enough that CloudWatch isn't a second bill:
+RDS, Lambda and ElastiCache write to CloudWatch whether you want them to or not. Once Fluent Bit is copying those logs into Loki you are paying CloudWatch to keep a second copy. Set those log groups to one day of retention. That is long enough for Fluent Bit to collect them and short enough that CloudWatch stops being a line item.
 
 ```hcl
 resource "aws_cloudwatch_log_group" "lambda" {
@@ -101,12 +95,11 @@ resource "aws_cloudwatch_log_group" "lambda" {
 }
 ```
 
-## Locking it down
+## Access
 
-- Block public access on the bucket and turn on SSE (`AES256`).
-- Loki has **no auth of its own** — anyone with cluster access can read every log. Put access control at the Grafana layer with team/org permissions.
+Block public access on the bucket and turn on server-side encryption. Loki itself has no authentication, so anyone who can reach it inside the cluster can read every log. Access control lives in Grafana, with its org and team permissions, and Loki should not be reachable from anywhere else.
 
-## Deploying it
+## Installing it
 
 ```bash
 helm repo add grafana https://grafana.github.io/helm-charts
@@ -124,4 +117,4 @@ loki:
   limits_config: { retention_period: 8760h }   # 365 days
 ```
 
-For a small-to-medium cluster the whole stack — Fluent Bit on each node, one Loki, one Grafana — sits around 1.5 CPU and ~3 GB of RAM. That's the entire logging bill: a couple of dollars of S3 and some spare cluster capacity.
+On a small to medium cluster the whole thing, Fluent Bit on each node plus one Loki and one Grafana, uses about 1.5 CPU and 3 GB of memory. That and the S3 bill is the entire cost of logging.
